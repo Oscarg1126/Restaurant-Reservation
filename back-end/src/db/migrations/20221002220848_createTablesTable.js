@@ -4,7 +4,7 @@ exports.up = function (knex) {
       table.increments("table_id").primary();
       table.string("table_name").notNullable();
       table.integer("capacity").notNullable();
-  
+      
       //foreign key here:
       table.integer("reservation_id").defaultTo(null);
       table

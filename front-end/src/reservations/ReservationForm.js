@@ -1,74 +1,102 @@
 import React from "react";
-import { useHistory } from "react-router-dom";
+import moment from "moment";
 
-const ReservationForm = ({ formData, handleChange, handleSubmit }) => {
-  const history = useHistory();
+function ReservationForm({submitHandle, changeHandle, form, cancelLink}){
+    const date = moment(form.reservation_date).format("yyyy-MM-DD")
 
-  return (
-    <>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="first_name">First Name:</label>
-        <input
-          id="first_name"
-          type="text"
-          name="first_name"
-          onChange={handleChange}
-          value={formData.first_name}
-        />
-        <label htmlFor="last_name">Last Name:</label>
-        <input
-          id="last_name"
-          type="text"
-          name="last_name"
-          onChange={handleChange}
-          value={formData.last_name}
-        />
-        <label htmlFor="mobile_number">Mobile Number:</label>
-        <input
-          id="mobile_number"
-          type="tel"
-          name="mobile_number"
-          onChange={handleChange}
-          value={formData.mobile_number}
-        />
-        <label htmlFor="reservation_date">Reservation Date:</label>
-        <input
-          id="reservation_date"
-          type="date"
-          name="reservation_date"
-          onChange={handleChange}
-          value={formData.reservation_date}
-        />
-        <label htmlFor="reservation_time">Reservation Time:</label>
-        <input
-          id="reservation_time"
-          type="time"
-          name="reservation_time"
-          onChange={handleChange}
-          value={formData.reservation_time}
-        />
-        <label htmlFor="people">Total Guests:</label>
-        <input
-          id="people"
-          type="number"
-          name="people"
-          onChange={handleChange}
-          value={formData.people}
-        />
+    return (
+        <form onSubmit={submitHandle}>
+            <div>
+                <label htmlFor="first_name" className="form-label">First Name</label>
+                <br />
+                <input
+                    id="first_name"
+                    className="form-control"
+                    type="text"
+                    placeholder="First Name"
+                    name="first_name"
+                    onChange={changeHandle}
+                    value={form.first_name}
+                    required
+                    />
+            </div>
+            <div>
+                <label htmlFor="last_name" className="form-label">Last Name</label>
+                <br />
+                <input
+                    id="last_name"
+                    className="form-control"
+                    type="text"
+                    placeholder="Last Name"
+                    name="last_name"
+                    onChange={changeHandle}
+                    value={form.last_name}
+                    required
+                    />
+            </div>
+            <div>
+                <label htmlFor="mobile_number" className="form-label">Mobile Number</label>
+                <br />
+                <input
+                    id="mobile_number"
+                    className="form-control"
+                    type="tel"
+                    placeholder="(---) --- ----"
+                    name="mobile_number"
+                    onChange={changeHandle}
+                    value={form.mobile_number}
+                    required
+                    />
+            </div>
+            <div>
+                <label htmlFor="reservation_date" className="form-label">Reservation Date</label>
+                <br />
+                <input
+                    id="reservation_date"
+                    className="form-control"
+                    type="date"
+                    pattern="\d{4}-\d{2}-\d{2}"
+                    placeholder="YYYY-MM-DD"
+                    name="reservation_date"
+                    onChange={changeHandle}
+                    value={date}
+                    required
+                    />
+            </div>
+            <div>
+                <label htmlFor="reservation_time" className="form-label">Reservation Time</label>
+                <br />
+                <input
+                    id="reservation_time"
+                    className="form-control"
+                    type="time"
+                    pattern="[0-9]{2}:[0-9]{2}"
+                    placeholder="HH:MM"
+                    name="reservation_time"
+                    onChange={changeHandle}
+                    value={form.reservation_time}
+                    required
+                    />
+            </div>
+            <div>
+                <label htmlFor="people" className="form-label">Number of people</label>
+                <br />
+                <input
+                    id="people"
+                    className="form-control"
+                    type="number"
+                    min={1}
+                    placeholder={1}
+                    name="people"
+                    onChange={changeHandle}
+                    value={form.people}
+                    required
+                    />
+            </div>
+            <button type="button" onClick={cancelLink} className="btn btn-secondary">Cancel</button>
+            <button type="submit" className="btn btn-primary m-3">Submit</button>
+        </form>
+    )
+}
 
-        <button className="btn btn-primary m-1" type="submit">
-          Submit
-        </button>
-        <button
-          className="btn btn-danger m-1"
-          type="cancel"
-          onClick={() => history.goBack()}
-        >
-          Cancel
-        </button>
-      </form>
-    </>
-  );
-};
-
-export default ReservationForm;
+export default ReservationForm

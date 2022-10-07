@@ -1,67 +1,56 @@
-import React, { useEffect, useState } from "react";
-import { useHistory, useParams } from "react-router";
-import { editReservation, readReservation } from "../utils/api";
-import ReservationForm from "./ReservationForm";
+import React, { useState, useEffect } from "react";
+import { useParams, useHistory } from "react-router-dom"
+import ReservationForm from "./ReservationForm"
 import ErrorAlert from "../layout/ErrorAlert";
+import { readReservation, updateReservation } from "../utils/api";
 
-export default function EditReservation() {
-  const [formData, setFormData] = useState({
-    first_name: "",
-    last_name: "",
-    mobile_number: "",
-    reservation_date: "",
-    reservation_time: "",
-    people: 1,
-  });
-  const [reservationError, setReservationError] = useState(null);
-  const history = useHistory();
-  const params = useParams();
+function EditReservation() {
+    const { reservation_id } = useParams()
+    const [reservation, setReservation] = useState({})
 
-  useEffect(loadReservation, []);
+    const [err, setErr] = useState(false)
+    const history = useHistory()
 
-  function loadReservation() {
-    const abortController = new AbortController();
-    setReservationError(null);
-    readReservation(params.reservation_id, abortController.signal)
-      .then((res) =>
-        setFormData({
-          ...res,
-          reservation_date: new Date(res.reservation_date)
-            .toISOString()
-            .substr(0, 10),
-        })
-      )
-      .catch(setReservationError);
-    return () => abortController.abort();
-  }
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const abortController = new AbortController();
-    editReservation(formData, formData.reservation_id, abortController.signal)
-      .then(() => history.push(`/dashboard?date=${formData.reservation_date}`))
-      .catch(setReservationError);
-    return () => abortController.abort();
-  };
-  const handleChange = ({ target }) => {
-    let value = target.value;
-    if (target.name === "people") {
-      if (value < 1) value = 1;
-      value = Number(value);
+    useEffect(()=>{
+        async function getReservation() {
+            const response = await readReservation(reservation_id)
+            setReservation(response)
+        } getReservation()
+    }, [reservation_id])
+    
+    const changeHandle = ({target})=> {
+        setReservation({...reservation, [target.name]: target.value})
     }
-    setFormData({
-      ...formData,
-      [target.name]: value,
-    });
-  };
-  return (
-    <div>
-      <h1>Edit Reservation:</h1>
-      <ErrorAlert error={reservationError} />
-      <ReservationForm
-        formData={formData}
-        handleChange={handleChange}
-        handleSubmit={handleSubmit}
-      />
-    </div>
-  );
+
+    const submitHandle = async (event)=> {
+        event.preventDefault()
+        setErr(false)
+        const abortController = new AbortController()
+        reservation.people = Number(reservation.people)
+        try {
+            const response = await updateReservation(reservation, abortController.signal)
+            history.push(`/dashboard?date=${response.reservation_date}`)
+        }
+        catch(error) {
+            if(error.name !== "AbortError") {
+                setErr(error)
+            }
+        }
+        return () => {
+            abortController.abort()
+          }
+    }
+
+    const cancelLink= ()=> history.goBack()
+
+
+    return (
+        <div>
+            <h1>Edit Reservation</h1>
+            <ErrorAlert error = {err}/>
+            <ReservationForm submitHandle={submitHandle} changeHandle={changeHandle} form={reservation} cancelLink={cancelLink} />
+        </div>
+    )
 }
+
+export default EditReservation

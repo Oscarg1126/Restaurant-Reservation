@@ -1,143 +1,73 @@
-import React, { useState, useEffect } from "react";
-import { useHistory, useParams } from "react-router-dom";
+import React, {useState, useEffect} from "react";
+import {listTables, seatTable} from "../utils/api"
+import { useParams, useHistory } from "react-router-dom"
 import ErrorAlert from "../layout/ErrorAlert";
-import { listReservations, seatTable } from "../utils/api";
 
-/**
- * Allow user to choose table for reservation.
- */
-export default function SeatReservation({ tables, loadDashboard }) {
-  const history = useHistory();
+function SeatReservation(){
+    const {reservation_id} = useParams()
+    const [tables, setTables] = useState([])
+    const [tablesError, setTablesError] = useState(false)
+    const [formData, setFormData] = useState({table_id: ""})
+    const history = useHistory()
+    
+    useEffect(()=>{
+        const abortController = new AbortController();
+        setTablesError(null);
+        listTables(abortController.signal)
+          .then(setTables)
+          .catch(setTablesError);
+        return () => abortController.abort();
+    }, [reservation_id])
 
-  const [table_id, setTableId] = useState(0);
-  const [reservations, setReservations] = useState([]);
-  const [reservationsError, setReservationsError] = useState(null);
-  const [errors, setErrors] = useState([]);
-  const [apiError, setApiError] = useState(null);
-
-  const { reservation_id } = useParams();
-
-  /**
-   * Shows all current reservations on first render
-   */
-  useEffect(() => {
-    const abortController = new AbortController();
-
-    setReservationsError(null);
-
-    listReservations(null, abortController.signal)
-      .then(setReservations)
-      .catch(setReservationsError);
-
-    return () => abortController.abort();
-  }, []);
-
-  if (!tables || !reservations) return null;
-
-  /**
-   * Update state when a user makes a change to the form.
-   */
-  function handleChange({ target }) {
-    setTableId(target.value);
-  }
-
-  /**
-   * Validate and make API call when a user submits the form.
-   */
-  function handleSubmit(event) {
-    event.preventDefault();
-    const abortController = new AbortController();
-
-    if (validateSeat()) {
-      seatTable(reservation_id, table_id, abortController.signal)
-        .then(loadDashboard)
-        .then(() => history.push(`/dashboard`))
-        .catch(setApiError);
+    const handleChange = ({target})=>{
+        setFormData({...formData, [target.name]: target.value})
     }
 
-    return () => abortController.abort();
-  }
-
-  /**
-   * Validate table is available for reservation.
-   */
-  function validateSeat() {
-    const foundErrors = [];
-
-    const foundTable = tables.find(
-      (table) => table.table_id === Number(table_id)
-    );
-    const foundReservation = reservations.find(
-      (reservation) => reservation.reservation_id === Number(reservation_id)
-    );
-
-    if (!foundTable) {
-      foundErrors.push("The table you selected does not exist.");
-    } else if (!foundReservation) {
-      foundErrors.push("This reservation does not exist.");
-    } else {
-      if (foundTable.status === "occupied") {
-        foundErrors.push("The table you selected is currently occupied.");
-      }
-
-      if (foundTable.capacity < foundReservation.people) {
-        foundErrors.push(
-          `The table you selected cannot seat ${foundReservation.people} people.`
-        );
-      }
+    const submitHandle = async (event)=> {
+        event.preventDefault()
+        setTablesError(false)
+        const tableId = Number(formData.table_id)
+        const reservationId = Number(reservation_id)
+        const abortController = new AbortController()
+        try {
+            await seatTable(tableId, reservationId, abortController.signal)
+            history.push(`/dashboard`)
+        }
+        catch(error) {
+            if(error.name !== "AbortError") {
+                setTablesError(error)
+            }
+        }
+        return () => {
+            abortController.abort()
+          }
     }
-
-    setErrors(foundErrors);
-
-    return foundErrors.length === 0;
-  }
-
-  const tableOptionsJSX = () => {
-    return tables.map((table) => (
-      <option key={table.table_id} value={table.table_id}>
-        {table.table_name} - {table.capacity}
-      </option>
-    ));
-  };
-
-  const errorsJSX = () => {
-    return errors.map((error, idx) => <ErrorAlert key={idx} error={error} />);
-  };
-
-  return (
-    <form className="form-select">
-      {errorsJSX()}
-      <ErrorAlert error={apiError} />
-      <ErrorAlert error={reservationsError} />
-
-      <label className="form-label" htmlFor="table_id">
-        Choose table:
-      </label>
-      <select
-        className="form-control"
-        name="table_id"
-        id="table_id"
-        value={table_id}
-        onChange={handleChange}
-      >
-        <option value={0}>Choose a table</option>
-        {tableOptionsJSX()}
-      </select>
-
-      <button
-        className="btn btn-primary m-1"
-        type="submit"
-        onClick={handleSubmit}
-      >
-        Submit
-      </button>
-      <button
-        className="btn btn-danger m-1"
-        type="button"
-        onClick={history.goBack}
-      >
-        Cancel
-      </button>
-    </form>
-  );
+    
+    return (
+        <div>
+            <h3>Seat Reservaion Number {reservation_id}</h3>
+            <ErrorAlert error={tablesError} />
+            <form onSubmit={submitHandle}>
+                <label htmlFor="table_id"> Choose a table:
+            <br/>
+            <select
+                id="table_id"
+                name="table_id"
+                onChange= {handleChange}
+                value={formData.table_id}
+            >
+                <option value="">-- Select an Option --</option>
+                {tables.map((table)=>
+                <option key={table.table_id} value={table.table_id}>{table.table_name} - {table.capacity}</option>
+                )}
+            </select>
+            </label>
+            <br/>
+            <button type="submit" className="btn btn-primary m-3">Submit</button>
+            <button type="button" onClick={()=> history.goBack()} className="btn btn-secondary m-3">Cancel</button>
+            </form>
+        </div>
+    )
 }
+
+export default SeatReservation
